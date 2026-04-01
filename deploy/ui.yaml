@@ -1,0 +1,64 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-topology-ui
+  namespace: default
+  labels:
+    app.kubernetes.io/name: k8s-topology-dashboard
+    app.kubernetes.io/component: ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-topology-ui
+  template:
+    metadata:
+      labels:
+        app: k8s-topology-ui
+        app.kubernetes.io/name: k8s-topology-dashboard
+        app.kubernetes.io/component: ui
+    spec:
+      containers:
+        - name: ui
+          image: ghcr.io/jonxie5/k8s-topology-dashboard/ui:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            # The UI calls the API through the browser.  In-cluster, the browser
+            # reaches the API via the same port-forward or Ingress hostname.
+            # Leave empty to use the same origin as the UI (recommended for
+            # production).  Override for split-origin dev setups.
+            - name: VITE_API_BASE_URL
+              value: ""
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: false   # nginx needs root to bind 80
+            readOnlyRootFilesystem: false
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-topology-ui
+  namespace: default
+  labels:
+    app.kubernetes.io/name: k8s-topology-dashboard
+    app.kubernetes.io/component: ui
+spec:
+  selector:
+    app: k8s-topology-ui
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  type: ClusterIP

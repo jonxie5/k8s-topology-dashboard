@@ -1,0 +1,21 @@
+# Binaries
+api/bin/
+ui/dist/
+ui/node_modules/
+
+# Go
+*.exe
+*.test
+*.out
+vendor/
+
+# Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env files (keep .env.example)
+.env
+.env.local

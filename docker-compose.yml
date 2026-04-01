@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - CORS_ORIGIN=http://localhost:5173
+      - MAX_NODES=500
+      - MAX_EDGES=2000
+    volumes:
+      # Mount your local kubeconfig for local dev
+      - "${HOME}/.kube:/home/nonroot/.kube:ro"
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080
+    depends_on:
+      - api
+    restart: unless-stopped

@@ -1,0 +1,86 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-topology-api
+  namespace: default
+  labels:
+    app.kubernetes.io/name: k8s-topology-dashboard
+    app.kubernetes.io/component: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-topology-api
+  template:
+    metadata:
+      labels:
+        app: k8s-topology-api
+        app.kubernetes.io/name: k8s-topology-dashboard
+        app.kubernetes.io/component: api
+    spec:
+      serviceAccountName: k8s-topology-api
+      containers:
+        - name: api
+          image: ghcr.io/jonxie5/k8s-topology-dashboard/api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: ADDR
+              value: ":8080"
+            # Allow the UI service to call the API from the browser (same-origin when
+            # accessed via port-forward or Ingress; adjust if using a different origin).
+            - name: CORS_ORIGIN
+              value: ""
+            # Guardrails – increase if your cluster is large
+            - name: MAX_NODES
+              value: "500"
+            - name: MAX_EDGES
+              value: "2000"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65534
+            readOnlyRootFilesystem: true
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-topology-api
+  namespace: default
+  labels:
+    app.kubernetes.io/name: k8s-topology-dashboard
+    app.kubernetes.io/component: api
+spec:
+  selector:
+    app: k8s-topology-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+  type: ClusterIP
